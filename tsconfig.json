@@ -2,8 +2,8 @@
     "include": ["src"],
     "exclude": ["node_modules", "dist"],
     "compilerOptions": {
-        "target": "es2015",
-        "module": "es2015",
+        "target": "ESNext",
+        "module": "ESNext",
         "declaration": true,
         "outDir": "./dist",
         "noEmit": false,
