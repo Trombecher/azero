@@ -1,7 +1,8 @@
 {
     "name": "a0",
     "version": "1.0.0",
-    "description": "A lightweight client-only front-end JavaScript framework.",
+    "description": "A lightweight front-end JavaScript framework.",
+    "files": ["dist", "LICENSE", "README.md", "package.json"],
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "type": "module",
@@ -13,8 +14,8 @@
         "frontend",
         "framework"
     ],
-    "author": "trombecher",
-    "license": "MIT",
+    "author": "Tobias Hillemanns",
+    "license": "ISC",
     "devDependencies": {
         "typescript": "^5.1.6"
     }
