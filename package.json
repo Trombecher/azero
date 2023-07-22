@@ -1,5 +1,5 @@
 {
-    "name": "a0",
+    "name": "azero",
     "version": "1.0.0",
     "description": "A lightweight front-end JavaScript framework.",
     "files": ["dist", "LICENSE", "README.md", "package.json"],
