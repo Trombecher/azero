@@ -2,9 +2,17 @@
     "name": "azero",
     "version": "1.0.1",
     "description": "A lightweight front-end JavaScript framework.",
-    "files": ["lib", "LICENSE", "README.md", "package.json"],
-    "main": "lib/index.js",
-    "types": "lib/index.d.ts",
+    "files": [
+        "index.js",
+        "index.d.ts",
+        "observable.js",
+        "observable.d.ts",
+        "LICENSE",
+        "README.md",
+        "package.json"
+    ],
+    "main": "index.js",
+    "types": "index.d.ts",
     "type": "module",
     "scripts": {
         "build": "tsc",

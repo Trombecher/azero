@@ -1,11 +1,17 @@
 {
     "include": ["src"],
-    "exclude": ["node_modules", "lib"],
+    "exclude": [
+        "node_modules",
+        "index.js",
+        "index.d.ts",
+        "observable.js",
+        "observable.d.ts"
+    ],
     "compilerOptions": {
         "target": "ESNext",
         "module": "ESNext",
         "declaration": true,
-        "outDir": "./lib",
+        "outDir": ".",
         "noEmit": false,
         "strict": true,
         "noImplicitAny": true,
