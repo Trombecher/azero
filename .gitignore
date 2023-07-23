@@ -3,3 +3,5 @@ index.js
 index.d.ts
 observable.js
 observable.d.ts
+test-suite/node_modules
+test-suite/dist

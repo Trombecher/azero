@@ -25,7 +25,7 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
 
     const partsIter = parts[Symbol.iterator]();
 
-    function parse(textOrTag: RegExpMatchArray | string): Node[] | string | Function {
+    function parse(textOrTag: RegExpMatchArray | string): Node | Node[] | string | Function {
         if(typeof textOrTag === "string") {
             const split = textOrTag.split("a0");
             const nodes: Node[] = [document.createTextNode(split[0]!)];

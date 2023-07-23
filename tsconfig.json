@@ -1,12 +1,6 @@
 {
     "include": ["src"],
-    "exclude": [
-        "node_modules",
-        "index.js",
-        "index.d.ts",
-        "observable.js",
-        "observable.d.ts"
-    ],
+    "exclude": [],
     "compilerOptions": {
         "target": "ESNext",
         "module": "ESNext",
