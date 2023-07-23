@@ -21,11 +21,36 @@ document.querySelector("#app")!.append(...html`
 document.querySelector("#app")!.append(...html`
     <div>Attribute test (yellow)</div>
     <div class="w-8 h-8 bg-yellow-400 flex-shrink-0"></div>
+    <div class='w-8 h-8 bg-yellow-400 flex-shrink-0'></div>
+    <div title=cool></div>
+`);
+
+document.querySelector("#app")!.append(...html`
+    <div>Static attribute test (red)</div>
+    <div class=${"w-8 h-8 bg-red-400 flex-shrink-0"}></div>
+`);
+
+const toggle = new Observable(true);
+
+document.querySelector("#app")!.append(...html`
+    <div>Reactive attribute test (with static insertion)</div>
+    <button onclick=${() => toggle.value = !toggle.value}>Toggle</button>
+    <div class="${toggle.derive(state => state ? "" : "hidden ")}bg-gray-400 ${"italic"}">Some text</div>
+`);
+
+document.querySelector("#app")!.append(...html`
+    <div>Spread props test (blue)</div>
+    <div ...${{className: "w-8 h-8 bg-blue-400 flex-shrink-0"}}></div>
 `);
 
 document.querySelector("#app")!.append(...html`
     <div>Inline tag test (div):</div>
     <div class="h-[1px] w-full bg-gray-200"/>
+`);
+
+document.querySelector("#app")!.append(...html`
+    <div>Void tag test (img):</div>
+    <img alt="A Void Tag" src="">
 `);
 
 document.querySelector("#app")!.append(...html`
@@ -58,6 +83,13 @@ document.querySelector("#app")!.append(...html`
     <${SingleElement} no="test">
         some child content
     </${SingleElement}>
+`);
+
+document.querySelector("#app")!.append(...html`
+    <div>Component test #3 (SingleElement) that has ${"<//>"} end tag:</div>
+    <${SingleElement} no="new">
+        some new child content
+    <//>
 `);
 
 type ObservablePost = {

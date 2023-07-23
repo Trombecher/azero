@@ -1,13 +1,37 @@
-import {Observable, ObservableArray} from "./observable";
+import {Observable, ObservableArray, reduce} from "./observable";
 
-const tags = /(<([a-zA-Z][a-zA-Z\-\d]*)([^\/"'>]|(("((\\")|[^"])*")|('((\\')|[^'])*')|([^\/"'>\s]+)))*\/?>)|(<\/([a-zA-Z][a-zA-Z\-\d]*)\s*>)/gm;
-const attributes = /\s*([^\/"'>\s]+)\s*=\s*(("(((\\")|[^"])*)")|('(((\\')|[^'])*)')|([^\/"'>\s]+))/gm;
+const tags = /(<([a-zA-Z][a-zA-Z\-\d]*)([^\/"'>]|(("((\\")|[^"])*")|('((\\')|[^'])*')|([^\/"'>\s]+)))*\/?>)|(<\/(\/|([a-zA-Z][a-zA-Z\-\d]*))\s*>)/gm;
+const attributes = /\s*([^\/"'>\s=]+)(\s*=\s*(("(((\\")|[^"])*)")|('(((\\')|[^'])*)')|([^\/"'>\s]+)))?/gm;
+
+const voidTags = [
+    "area",
+    "base",
+    "basefont",
+    "bgsound",
+    "br",
+    "col",
+    "command",
+    "embed",
+    "frame",
+    "hr",
+    "image",
+    "img",
+    "input",
+    "keygen",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr"
+];
 
 export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
     const replacement = "a0";
     const molten = strings.join(replacement);
 
     let valueIndex = -1;
+
     function getValue() {
         valueIndex++;
         return values[valueIndex];
@@ -60,9 +84,9 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
                         value.subscribe(value => text.textContent = value + "", false);
                         nodes.push(text);
                     }
-                } else nodes.push(document.createTextNode(value))
+                } else nodes.push(document.createTextNode(value));
 
-                nodes.push(document.createTextNode(split[j]!))
+                nodes.push(document.createTextNode(split[j]!));
             }
 
             return nodes;
@@ -77,10 +101,22 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
                 const attributesString = textOrTag[0]
                     .substring(1 + textOrTag[2].length, textOrTag[0].length);
                 for(const match of attributesString.matchAll(attributes)) {
-                    const value = match[8] || match[4] || match[2];
+                    const key = match[1]!;
+
+                    if(key === "..." + replacement) {
+                        Object.assign(params, getValue());
+                        continue;
+                    }
+
+                    let value = match[9];
+                    if(value === undefined) {
+                        value = match[5];
+                        if(value === undefined) value = match[3];
+                    }
+
                     if(value === replacement)
-                        params[match[1]!] = getValue();
-                    else params[match[1]!] = value;
+                        params[key] = getValue();
+                    else params[key] = value;
                 }
 
                 params["children"] = [];
@@ -88,49 +124,80 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
                 if(textOrTag[0].at(-2) === "/") // inline
                     return component(params);
 
-                let end: Function;
+                let end: Function | string;
                 for(const part of partsIter) {
                     const children = parse(part);
                     if(children instanceof Array)
                         params["children"].push(...children);
                     else if(children instanceof Node)
-                        params["children"].push(children)
-                    else if(typeof children === "function") {
+                        params["children"].push(children);
+                    else if(typeof children === "function" || typeof children === "string") {
                         end = children;
                         break;
                     } else throw new Error(`TF?`);
                 }
 
                 // @ts-ignore
-                if(component !== end)
+                if(component !== end && end !== "/")
                     throw new Error("Start and end tags of component do not match");
 
                 return component(params);
             }
 
             // native
-            const element = document.createElement(textOrTag[2]);
+            const element: HTMLElement & {[index: string]: any} =
+                document.createElement(textOrTag[2]);
 
             const attributesString = textOrTag[0]
                 .substring(1 + textOrTag[2].length, textOrTag[0].length);
             for(const match of attributesString.matchAll(attributes)) {
-                let key = match[1];
+                let key = match[1]!;
+
                 if(key === "class") key = "className";
-                const value = match[8] || match[4] || match[2];
-                if(value === replacement) {
+                else if(key === "..." + replacement) {
+                    Object.assign(element, getValue());
+                    continue;
+                }
+
+                let value = match[9];
+                if(value === undefined) {
+                    value = match[5];
+                    if(value === undefined) value = match[3];
+                }
+
+                if(value === undefined)
+                    element[key] = "";
+                else if(value === replacement) {
                     const value = getValue();
                     if(value instanceof Observable)
-                        // @ts-ignore
                         value.subscribe(value => element[key] = value);
-                    // @ts-ignore
                     else element[key] = value;
-                }
-                // @ts-ignore
-                else element[key] = value;
+                } else if(value.includes(replacement)) {
+                    const parts = value.split(replacement);
+                    const values: (string | Observable<string>)[] = [];
+
+                    for(let i = 0; i < parts.length - 1; i++)
+                        values.push(getValue());
+
+                    reduce(values.filter(value => value instanceof Observable) as Observable<any>[], newValues => {
+                        let s = parts[0]!;
+                        let newValueIndex = 0;
+                        for(let i = 0; i < values.length; i++) {
+                            let value = values[i]!;
+                            if(value instanceof Observable) {
+                                value = newValues[newValueIndex];
+                                newValueIndex++;
+                            }
+                            s += value + parts[i + 1]!;
+                        }
+                        element[key] = s;
+                    });
+                } else element[key] = value;
             }
 
-            if(textOrTag[0].at(-2) === "/") // inline
-                return [element];
+            if(textOrTag[0].at(-2) === "/"
+                || voidTags.includes(element.tagName.toLowerCase())) // inline or void tag
+                return element;
 
             let end: string;
             for(const part of partsIter) {
@@ -138,7 +205,7 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
                 if(children instanceof Array)
                     element.append(...children);
                 else if(children instanceof Node)
-                    element.append(children)
+                    element.append(children);
                 else if(typeof children === "string") {
                     end = children;
                     break;
@@ -147,10 +214,10 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
 
             // @ts-ignore
             if(textOrTag[2] !== end)
-            // @ts-ignore
+                // @ts-ignore
                 throw new Error(`Start and end tags <${textOrTag[2]}> and </${end}> do not match`);
 
-            return [element];
+            return element;
         }
 
         // end tag
@@ -163,7 +230,7 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
         if(children instanceof Array)
             nodes.push(...children);
         else if(children instanceof Node)
-            nodes.push(children)
+            nodes.push(children);
         else throw new Error(`TF?`);
     }
 
