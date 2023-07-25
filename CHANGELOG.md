@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0 - 2023-07-25
+
+- Improved README with documentation
+- Added lifecycle implementation for observables of text
+
+### Added
+
+- Component lifecycle
+- Improved error messages
+
 ## 1.1.0 - 2023-07-23
 
 ### Added

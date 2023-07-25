@@ -196,3 +196,17 @@ document.querySelector("#app")!.append(...html`
     </button>
     <div>${counter} * ${multiplier} = ${reduce([counter, multiplier], ([a, b]) => a * b)}</div>
 `);
+
+const nodes: ObservableArray<Node> = new ObservableArray();
+
+document.querySelector("#app")!.append(...html`
+    <div class="text-xl">Component Lifecycle Test</div>
+    <button onclick=${() => nodes.add(html`
+        <div
+            onMount=${() => alert("added")}
+            onUnmount=${() => alert("Removed!")}
+        >Some content with lifecycle</div>
+    `[1])}>add node</button>
+    <button onclick=${() => nodes.removeAt(-1)}>remove node</button>
+    ${map(nodes, node => node)}
+`);

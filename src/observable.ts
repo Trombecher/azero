@@ -185,7 +185,7 @@ export class ObservableArray<E> implements Iterable<E> {
      * Subscribes to move events.
      * @returns A function that unsubscribes.
      */
-    subscribeToMove(subscription: (from: number, to: number) => void) {
+    subscribeToMove(subscription: (from: number, to: number) => void): () => void {
         this.#onMove.push(subscription);
         return () => {
             const index = this.#onMove.indexOf(subscription);
@@ -197,7 +197,7 @@ export class ObservableArray<E> implements Iterable<E> {
      * Subscribes to insert events.
      * @returns A function that unsubscribes.
      */
-    subscribeToInsert(subscription: (index: number, element: E) => void) {
+    subscribeToInsert(subscription: (index: number, element: E) => void): () => void {
         this.#onInsert.push(subscription);
         return () => {
             const index = this.#onInsert.indexOf(subscription);
@@ -218,7 +218,7 @@ export class ObservableArray<E> implements Iterable<E> {
     }
 
     /**
-     * Moves the item at index _from_ to index _to_.
+     * Moves the item at element _from_ to index _to_.
      *
      * @param from Indexes `0` to `length - 1`. A negative value `n` maps to `length + n`;
      * @param to Indexes `0` to `length - 1`. A negative value `n` maps to `length + n`;
@@ -231,12 +231,11 @@ export class ObservableArray<E> implements Iterable<E> {
     /**
      * Sets the index to the specified element.
      *
-     * @throws A `RangeError` if `index > length`.
+     * If `index > length` it does nothing.
      * Note, that the index `length` is included in order to append items.
      */
     set(index: number, element: E): void {
-        if(index > this.#data.length)
-            throw new RangeError(`Provided index ${index} is greater than the array length.`);
+        if(index > this.#data.length) return;
         this.#data[index] = element;
         for(const notify of this.#onSet) notify(index, element);
     }

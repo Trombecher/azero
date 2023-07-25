@@ -1,5 +1,12 @@
 import {Observable, ObservableArray, reduce} from "./observable";
 
+declare global {
+    interface Node {
+        onMount?: () => void
+        onUnmount?: () => void
+    }
+}
+
 const tags = /(<([a-zA-Z][a-zA-Z\-\d]*)([^\/"'>]|(("((\\")|[^"])*")|('((\\')|[^'])*')|([^\/"'>\s]+)))*\/?>)|(<\/(\/|([a-zA-Z][a-zA-Z\-\d]*))\s*>)/gm;
 const attributes = /\s*([^\/"'>\s=]+)(\s*=\s*(("(((\\")|[^"])*)")|('(((\\')|[^'])*)')|([^\/"'>\s]+)))?/gm;
 
@@ -25,6 +32,29 @@ const voidTags = [
     "track",
     "wbr"
 ];
+
+const observer = new MutationObserver(records => {
+    for(const record of records) {
+        for(const addedNode of record.addedNodes) {
+            addedNode.onMount?.call(this);
+            if(addedNode instanceof HTMLElement)
+                addedNode.querySelectorAll("*").forEach(node =>
+                    node.onMount?.call(this))
+        }
+
+        for(const removedNode of record.removedNodes) {
+            removedNode.onUnmount?.call(this);
+            if(removedNode instanceof HTMLElement)
+                removedNode.querySelectorAll("*").forEach(node =>
+                    node.onMount?.call(this))
+        }
+    }
+});
+
+observer.observe(document.body.parentElement!, {
+    childList: true,
+    subtree: true
+});
 
 export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
     const replacement = "a0";
@@ -64,6 +94,7 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
                             previousNode.parentElement!.replaceChild(node, previousNode);
                             previousNode = node;
                         });
+
                         nodes.push(previousNode);
                     } else if(value.value instanceof Array) {
                         const anchor = document.createTextNode("");
@@ -80,8 +111,11 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
 
                         nodes.push(anchor, ...value.value);
                     } else {
-                        const text = document.createTextNode(value.value + "");
-                        value.subscribe(value => text.textContent = value + "", false);
+                        const text = document.createTextNode("");
+                        text.onMount = () =>
+                            text.onUnmount = value.subscribe(value =>
+                                text.textContent = value + "");
+
                         nodes.push(text);
                     }
                 } else nodes.push(document.createTextNode(value));
@@ -103,7 +137,7 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
                 for(const match of attributesString.matchAll(attributes)) {
                     const key = match[1]!;
 
-                    if(key === "..." + replacement) {
+                    if(key === "..." + replacement) { // spread props
                         Object.assign(params, getValue());
                         continue;
                     }
@@ -134,7 +168,7 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
                     else if(typeof children === "function" || typeof children === "string") {
                         end = children;
                         break;
-                    } else throw new Error(`TF?`);
+                    } else throw new Error(`Unexpected value ${children}`);
                 }
 
                 // @ts-ignore
@@ -196,7 +230,7 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
             }
 
             if(textOrTag[0].at(-2) === "/"
-                || voidTags.includes(element.tagName.toLowerCase())) // inline or void tag
+                || voidTags.includes(element.tagName.toLowerCase())) // self-closing tag or inline
                 return element;
 
             let end: string;
@@ -209,7 +243,7 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
                 else if(typeof children === "string") {
                     end = children;
                     break;
-                } else throw new Error(`TF?`);
+                } else throw new Error(`Unexpected value ${children}`);
             }
 
             // @ts-ignore
@@ -231,7 +265,7 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
             nodes.push(...children);
         else if(children instanceof Node)
             nodes.push(children);
-        else throw new Error(`TF?`);
+        else throw new Error(`Component or native end tag </${children}> without a start tag`);
     }
 
     return nodes;
