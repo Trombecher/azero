@@ -33,21 +33,33 @@ const voidTags = [
     "wbr"
 ];
 
+/**
+ * Recursively calls `onMount` on the descendants of `node`.
+ */
+function mount(node: Node) {
+    node.onMount?.call(undefined);
+    if(node instanceof HTMLElement)
+        for(const child of node.childNodes)
+            mount(child);
+}
+
+/**
+ * Recursively calls `onUnmount` on the descendants of `node`.
+ */
+function unMount(node: Node) {
+    node.onUnmount?.call(undefined);
+    if(node instanceof HTMLElement)
+        for(const child of node.childNodes)
+            unMount(child);
+}
+
 const observer = new MutationObserver(records => {
     for(const record of records) {
-        for(const addedNode of record.addedNodes) {
-            addedNode.onMount?.call(this);
-            if(addedNode instanceof HTMLElement)
-                addedNode.querySelectorAll("*").forEach(node =>
-                    node.onMount?.call(this))
-        }
+        for(const node of record.addedNodes)
+            mount(node);
 
-        for(const removedNode of record.removedNodes) {
-            removedNode.onUnmount?.call(this);
-            if(removedNode instanceof HTMLElement)
-                removedNode.querySelectorAll("*").forEach(node =>
-                    node.onMount?.call(this))
-        }
+        for(const removedNode of record.removedNodes)
+            unMount(removedNode);
     }
 });
 
@@ -112,9 +124,10 @@ export function html(strings: TemplateStringsArray, ...values: any[]): Node[] {
                         nodes.push(anchor, ...value.value);
                     } else {
                         const text = document.createTextNode("");
-                        text.onMount = () =>
+                        text.onMount = () => {
                             text.onUnmount = value.subscribe(value =>
                                 text.textContent = value + "");
+                        }
 
                         nodes.push(text);
                     }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 - 2023-07-25
+
+- Fixed observables not working
+
 ## 1.2.0 - 2023-07-25
 
 - Improved README with documentation
